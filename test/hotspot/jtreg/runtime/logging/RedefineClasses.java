@@ -53,6 +53,7 @@ public class RedefineClasses {
         RedefineClassHelper.redefineClass(RedefineClasses_B.class, newB);
         RedefineClasses_B.test();
         for (int i = 0; i < 20 ; i++) {
+			int j = 100 / i;
             obj[i] = new byte[1024 * 1024];
             System.gc();
         }

@@ -291,12 +291,25 @@ static void* load_agent_from_relative_path(JvmtiAgent* agent, bool vm_exit_on_er
   assert(!agent->is_absolute_path(), "invariant");
   const char* const name = agent->name();
   void* library = nullptr;
+#ifdef AIX
+  char* libpath = getenv("LIBPATH");
+    printf("#load_agent_from_relative_path: LIBPATH=%s\n", libpath);
+    fflush(stdout);
+#endif
   // Try to load the agent from the standard dll directory
   if (os::dll_locate_lib(&buffer[0], sizeof buffer, Arguments::get_dll_dir(), name)) {
+#ifdef AIX
+    printf("#load_agent_from_relative_path: 1. Try with dll_locate_lib: agent: %s; Full load location: %s\n", name, &buffer[0]);
+    fflush(stdout);
+#endif
     library = os::dll_load(&buffer[0], &ebuf[0], sizeof ebuf);
   }
   if (library == nullptr && os::dll_build_name(&buffer[0], sizeof buffer, name)) {
     // Try the library path directory.
+#ifdef AIX
+    printf("#load_agent_from_relative_path: 2. Try with LIBPATH: agent: %s; Full load location: %s\n", name, &buffer[0]);
+    fflush(stdout);
+#endif
     library = os::dll_load(&buffer[0], &ebuf[0], sizeof ebuf);
     if (library != nullptr) {
       return library;

@@ -315,25 +315,49 @@ static void free_array_of_char_arrays(char** a, size_t n) {
 bool os::dll_locate_lib(char *buffer, size_t buflen,
                         const char* pname, const char* fname) {
   bool retval = false;
+#ifdef AIX
+    printf("#dll_locate_lib: 1. pname: %s; fname: %s\n", pname, fname);
+    fflush(stdout);
+#endif
 
   size_t fullfnamelen = strlen(JNI_LIB_PREFIX) + strlen(fname) + strlen(JNI_LIB_SUFFIX);
   char* fullfname = NEW_C_HEAP_ARRAY(char, fullfnamelen + 1, mtInternal);
   if (dll_build_name(fullfname, fullfnamelen + 1, fname)) {
+#ifdef AIX
+    printf("#dll_locate_lib: 2. fullfname: %s\n", fullfname);
+    fflush(stdout);
+#endif
     const size_t pnamelen = pname ? strlen(pname) : 0;
 
     if (pnamelen == 0) {
+#ifdef AIX
+    printf("#dll_locate_lib: 3. pnamelen == 0\n");
+    fflush(stdout);
+#endif
       // If no path given, use current working directory.
       const char* p = get_current_directory(buffer, buflen);
       if (p != nullptr) {
+#ifdef AIX
+    printf("#dll_locate_lib: 4. curdir: %s\n", p);
+    fflush(stdout);
+#endif
         const size_t plen = strlen(buffer);
         const char lastchar = buffer[plen - 1];
         retval = conc_path_file_and_check(buffer, &buffer[plen], buflen - plen,
                                           "", lastchar, fullfname);
+#ifdef AIX
+    printf("#dll_locate_lib: 5. final buffer: %s\n", buffer);
+    fflush(stdout);
+#endif
       }
     } else if (strchr(pname, *os::path_separator()) != nullptr) {
       // A list of paths. Search for the path that contains the library.
       size_t n;
       char** pelements = split_path(pname, &n, fullfnamelen);
+#ifdef AIX
+    printf("#dll_locate_lib: 6. a list of paths\n");
+    fflush(stdout);
+#endif
       if (pelements != nullptr) {
         for (size_t i = 0; i < n; i++) {
           char* path = pelements[i];
@@ -344,6 +368,10 @@ bool os::dll_locate_lib(char *buffer, size_t buflen,
           }
           const char lastchar = path[plen - 1];
           retval = conc_path_file_and_check(buffer, buffer, buflen, path, lastchar, fullfname);
+#ifdef AIX
+    printf("#dll_locate_lib: 7. final buffer: %s\n", buffer);
+    fflush(stdout);
+#endif
           if (retval) break;
         }
         // Release the storage allocated by split_path.
@@ -353,10 +381,18 @@ bool os::dll_locate_lib(char *buffer, size_t buflen,
       // A definite path.
       const char lastchar = pname[pnamelen-1];
       retval = conc_path_file_and_check(buffer, buffer, buflen, pname, lastchar, fullfname);
+#ifdef AIX
+    printf("#dll_locate_lib: 8. A definite path; final buffer: %s\n", buffer);
+    fflush(stdout);
+#endif
     }
   }
 
   FREE_C_HEAP_ARRAY(char*, fullfname);
+#ifdef AIX
+    printf("#dll_locate_lib: 9. returns: %s\n", (retval == true)?"FOUND":"NOT FOUND");
+    fflush(stdout);
+#endif
   return retval;
 }
 
