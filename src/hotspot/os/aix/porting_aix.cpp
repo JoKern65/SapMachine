@@ -980,6 +980,13 @@ static bool search_file_in_LIBPATH(const char* path, struct stat64x* stat) {
     *substr = 0;
   }
 
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf("##########################\n");
+          printf("# filename=%s\n", path);
+        }
+#endif
+
   bool ret = false;
   // If FilePath contains a slash character, FilePath is used directly,
   // and no directories are searched.
@@ -992,6 +999,19 @@ static bool search_file_in_LIBPATH(const char* path, struct stat64x* stat) {
       combined.print("./%s", path2);
     }
     ret = (0 == stat64x(combined.base(), stat));
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf("# 1. filename combined=%s ", combined.base());
+          if (ret) {
+            printf(" file exists\n");
+          }
+          else {
+            printf(" file does not exist\n");
+          }
+          printf("##########################\n");
+          fflush(stdout);
+        }
+#endif
     os::free(path2);
     return ret;
   }
@@ -1018,15 +1038,42 @@ static bool search_file_in_LIBPATH(const char* path, struct stat64x* stat) {
   }
 
   char* libpath = os::strdup(Libpath.base());
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf("# LIBPATH=%s\n", libpath);
+        }
+#endif
 
   char *saveptr, *token;
   for (token = strtok_r(libpath, ":", &saveptr); token != nullptr; token = strtok_r(nullptr, ":", &saveptr)) {
     stringStream combined;
     combined.print("%s/%s", token, path2);
-    if ((ret = (0 == stat64x(combined.base(), stat))))
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf("# filename combined=%s", combined.base());
+        }
+#endif
+    if ((ret = (0 == stat64x(combined.base(), stat)))) {
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+            printf(" file exists\n");
+        }
+#endif
       break;
+    }
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf(" file does not exist\n");
+        }
+#endif
   }
 
+#ifdef AIX
+        if (strstr(path, "libinstrument.so") != nullptr) {
+          printf("##########################\n");
+          fflush(stdout);
+        }
+#endif
   os::free(libpath);
   os::free(path2);
   return ret;
@@ -1105,6 +1152,24 @@ void* Aix_dlopen(const char* filename, int Flags, const char** error_report) {
         if (*error_report == nullptr) {
           *error_report = "dlerror returned no error description";
         }
+#ifdef AIX
+        if (strstr(filename, "libinstrument.so") != nullptr) {
+          char* libpath = getenv("LIBPATH");
+          struct stat statbuf;
+          printf("##########################\n# LIBPATH=%s\n", libpath);
+          printf("# filename=%s\n", filename);
+          printf("# dlerror=%s\n", *error_report);
+          if (os::stat(filename, &statbuf) == 0) {
+            printf("# file exists =%s\n", filename);
+            printf("# Mode Bits =%d\n", statbuf.st_mode);
+          }
+          else {
+            printf("# file does not exist=%s\n", filename);
+          }
+          printf("##########################\n");
+          fflush(stdout);
+        }
+#endif
       }
     }
   }
