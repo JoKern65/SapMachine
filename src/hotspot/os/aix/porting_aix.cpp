@@ -1137,6 +1137,14 @@ void* Aix_dlopen(const char* filename, int Flags, const char** error_report) {
         p_handletable = new_tab;
       }
       // Library not yet loaded; load it, then store its handle in handle table
+#ifdef AIX
+        char jkbuf[1024];
+        if (strstr(filename, "libinstrument.so") != nullptr) {
+          char* libpath = getenv("LIBPATH");
+          printf("##########################\n# LIBPATH=%s\n", libpath);
+          printf("# filename=%s\n", filename);
+        }
+#endif
       result = ::dlopen(filename, Flags);
       if (result != nullptr) {
         g_handletable_used++;
@@ -1145,6 +1153,24 @@ void* Aix_dlopen(const char* filename, int Flags, const char** error_report) {
         (p_handletable + i)->devid = libstat.st_dev;
         (p_handletable + i)->member = member;
         (p_handletable + i)->refcount = 1;
+#ifdef AIX
+        if (strstr(filename, "libinstrument.so") != nullptr) {
+          struct stat statbuf;
+          if (os::stat(filename, &statbuf) == 0) {
+            printf("# file exists =%s\n", filename);
+            printf("# Mode Bits =%d\n", statbuf.st_mode);
+            sprintf(jkbuf, "dump -X64 -H %s", filename);
+          fflush(stdout);
+            system(jkbuf);
+          fflush(stdout);
+          }
+          else {
+            printf("# file does not exist=%s\n", filename);
+          }
+          printf("##########################\n");
+          fflush(stdout);
+        }
+#endif
       }
       else {
         // error analysis when dlopen fails
@@ -1154,14 +1180,15 @@ void* Aix_dlopen(const char* filename, int Flags, const char** error_report) {
         }
 #ifdef AIX
         if (strstr(filename, "libinstrument.so") != nullptr) {
-          char* libpath = getenv("LIBPATH");
           struct stat statbuf;
-          printf("##########################\n# LIBPATH=%s\n", libpath);
-          printf("# filename=%s\n", filename);
           printf("# dlerror=%s\n", *error_report);
           if (os::stat(filename, &statbuf) == 0) {
             printf("# file exists =%s\n", filename);
             printf("# Mode Bits =%d\n", statbuf.st_mode);
+            sprintf(jkbuf, "dump -X64 -H %s", filename);
+          fflush(stdout);
+            system(jkbuf);
+          fflush(stdout);
           }
           else {
             printf("# file does not exist=%s\n", filename);
